@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -110,6 +110,53 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
     """
+    def minMax(self, gameState, agentIndex, depth):
+        # Terminal-state
+        if depth == 0 or not gameState.getLegalActions(0):
+            return self.evaluationFunction(gameState)
+
+        # Pacman
+        if agentIndex == 0:
+            successorStates = [gameState.generateSuccessor(0, a)
+                               for a in gameState.getLegalActions(0)]
+            maxVal = float("-inf")
+            for state in successorStates:
+                val = self.minMax(state, 1, depth)
+                if val > maxVal:
+                    maxVal = val
+            return maxVal
+
+        # Ghost
+        else:
+            if agentIndex < gameState.getNumAgents()-1:
+                nextAgent = agentIndex + 1
+            else:
+                nextAgent = 0
+                depth = depth - 1
+
+            successorStates = [gameState.generateSuccessor(agentIndex, a)
+                               for a in gameState.getLegalActions(agentIndex)]
+            minVal = float("inf")
+            for state in successorStates:
+                val = self.minMax(state, nextAgent, depth)
+                if val < minVal:
+                    minVal = val
+            return minVal
+
+    # Checks if (action, utility)-touples in list has the same utility, and if they do it filters out any STOP-actions,
+    # as STOP-actions tend to be bad actions
+    def bestAction(self, li):
+        best = [li[0]]
+        for i in range(1, len(li)):
+            if li[i][1] == best[0][1]:
+                best.append(li[i])
+            elif li[i][1] > best[0][1]:
+                best = [li[i]]
+        if len(best) <= 1:
+            return best[0][0]
+        else:
+            noStops = filter(lambda a: a[0] != Directions.STOP, best)
+            return noStops[random.randint(0, len(noStops)-1)][0]
 
     def getAction(self, gameState):
         """
@@ -128,8 +175,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
+
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        actions = [(a, self.minMax(gameState.generateSuccessor(0, a), 1, self.depth)) for a in gameState.getLegalActions(0)]
+        bestAction = self.bestAction(actions)
+
+        return bestAction
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
